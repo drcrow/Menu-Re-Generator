@@ -29,14 +29,14 @@
 
 	<table class="table">
 		<tr>
-			<td colspan="2"><h4>Product's Categories</h4></td>
-			<td colspan="2"><h4>Owl Megamenu</h4></td>
+			<td colspan="2"><h2>Product's Categories</h4></td>
+			<td colspan="2"><h2>Owl Megamenu</h4></td>
 		</tr>
 
 		{foreach from=$categories_tree item=category}
 			<tr>
 				<td colspan="2">[{$category.id_category}] {$category.name}</td>
-				<td colspan="2"> <input type="checkbox" name ="use" id="use" value="{$category.id_category}" checked="checked"> </td>
+				<td colspan="2"> <input type="checkbox" class="parentcheck parent_{$category.id_category}" name ="use" id="use" value="{$category.id_category}" checked="checked"> </td>
 				<td> <input type="text" id="text" value="{$category.name}"> </td>
 			</tr>
 
@@ -45,7 +45,7 @@
 					<td> --- </td>
 					<td>[{$child.id_category}] {$child.name}</td>
 					<td> --- </td>
-					<td> <input type="checkbox" name ="use" id="use" value="{$child.id_category}" checked="checked"> </td>
+					<td> <input type="checkbox" class="childcheck childof_{$category.id_category}" parent="{$category.id_category}" name ="use" id="use" value="{$child.id_category}" checked="checked"> </td>
 					<td> <input type="text" id="text" value="{$child.name}"> </td>
 				</tr>
 			{/foreach}	
@@ -55,27 +55,34 @@
       
     </table>
 
+<script type="text/javascript">
+
+	$(document).ready(function(){
+		//checks or unchecks all the childs of the clicked parent
+	    $(".parentcheck").click(function() {
+	        if(this.checked){
+	        	$(".childof_"+this.value).prop('checked', true);
+	        }else{
+	        	$(".childof_"+this.value).prop('checked', false);
+	        }
+	    }); 
+	    //checks the parent of the clicked child
+	    $(".childcheck").click(function() {
+	    	var parent = $(this).attr('parent');
+	        if(this.checked){
+	        	$(".parent_"+parent).prop('checked', true);
+	        }
+	    });                 
+	});
+</script>
 
 
+	<div class="text-right" style="margin-top: 40px">
 
-	<p>
-		<strong>{l s='Here is my new generic module!' mod='menuregenerator'}</strong><br />
-		{l s='Thanks to PrestaShop, now I have a great module.' mod='menuregenerator'}<br />
-		{l s='I can configure it using the following configuration form.' mod='menuregenerator'}
-	</p>
-	<br />
-	<p>
-		{l s='This module will boost your sales!' mod='menuregenerator'}
-	</p>
-</div>
+		<button type="button" class="btn btn-primary">Generate Menu</button>
+		&nbsp;&nbsp;&nbsp;
+		<button type="button" class="btn btn-danger">Clear and then Generate Menu</button>
 
-<div class="panel">
-	<h3><i class="icon icon-tags"></i> {l s='Documentation' mod='menuregenerator'}</h3>
-	<p>
-		&raquo; {l s='You can get a PDF documentation to configure this module' mod='menuregenerator'} :
-		<ul>
-			<li><a href="#" target="_blank">{l s='English' mod='menuregenerator'}</a></li>
-			<li><a href="#" target="_blank">{l s='French' mod='menuregenerator'}</a></li>
-		</ul>
-	</p>
+	</div>
+
 </div>
