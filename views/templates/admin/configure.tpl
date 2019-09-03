@@ -79,9 +79,9 @@
 
 	<div class="text-right" style="margin-top: 40px">
 
-		<button type="button" class="btn btn-primary">Generate Menu</button>
+		<button type="submit" class="btn btn-primary">Generate Menu</button>
 		&nbsp;&nbsp;&nbsp;
-		<button type="button" class="btn btn-danger">Clear and then Generate Menu</button>
+		<button type="submit" class="btn btn-danger">Clear and then Generate Menu</button>
 
 	</div>
 

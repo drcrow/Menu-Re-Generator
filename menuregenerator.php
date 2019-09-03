@@ -59,8 +59,6 @@ class Menuregenerator extends Module
      */
     public function install()
     {
-        Configuration::updateValue('MENUREGENERATOR_LIVE_MODE', false);
-
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('backOfficeHeader');
@@ -68,8 +66,6 @@ class Menuregenerator extends Module
 
     public function uninstall()
     {
-        Configuration::deleteByName('MENUREGENERATOR_LIVE_MODE');
-
         return parent::uninstall();
     }
 
@@ -90,7 +86,7 @@ class Menuregenerator extends Module
 
         $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
 
-        return $output.$this->renderForm();
+        return $output;//.$this->renderForm();
     }
 
     /**
@@ -126,51 +122,7 @@ class Menuregenerator extends Module
      */
     protected function getConfigForm()
     {
-        return array(
-            'form' => array(
-                'legend' => array(
-                'title' => $this->l('Settings'),
-                'icon' => 'icon-cogs',
-                ),
-                'input' => array(
-                    array(
-                        'type' => 'switch',
-                        'label' => $this->l('Live mode'),
-                        'name' => 'MENUREGENERATOR_LIVE_MODE',
-                        'is_bool' => true,
-                        'desc' => $this->l('Use this module in live mode'),
-                        'values' => array(
-                            array(
-                                'id' => 'active_on',
-                                'value' => true,
-                                'label' => $this->l('Enabled')
-                            ),
-                            array(
-                                'id' => 'active_off',
-                                'value' => false,
-                                'label' => $this->l('Disabled')
-                            )
-                        ),
-                    ),
-                    array(
-                        'col' => 3,
-                        'type' => 'text',
-                        'prefix' => '<i class="icon icon-envelope"></i>',
-                        'desc' => $this->l('Enter a valid email address'),
-                        'name' => 'MENUREGENERATOR_ACCOUNT_EMAIL',
-                        'label' => $this->l('Email'),
-                    ),
-                    array(
-                        'type' => 'password',
-                        'name' => 'MENUREGENERATOR_ACCOUNT_PASSWORD',
-                        'label' => $this->l('Password'),
-                    ),
-                ),
-                'submit' => array(
-                    'title' => $this->l('Save'),
-                ),
-            ),
-        );
+        
     }
 
     /**
@@ -178,11 +130,7 @@ class Menuregenerator extends Module
      */
     protected function getConfigFormValues()
     {
-        return array(
-            'MENUREGENERATOR_LIVE_MODE' => Configuration::get('MENUREGENERATOR_LIVE_MODE', true),
-            'MENUREGENERATOR_ACCOUNT_EMAIL' => Configuration::get('MENUREGENERATOR_ACCOUNT_EMAIL', 'contact@prestashop.com'),
-            'MENUREGENERATOR_ACCOUNT_PASSWORD' => Configuration::get('MENUREGENERATOR_ACCOUNT_PASSWORD', null),
-        );
+
     }
 
     /**
