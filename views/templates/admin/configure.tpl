@@ -22,22 +22,22 @@
 *  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
 *}
-
+<form method="post">
 <div class="panel">
 	<h3><i class="icon icon-credit-card"></i> {l s='Menu Re-Generator' mod='menuregenerator'}</h3>
 
 
-	<table class="table">
+	<table class="table regenerator_table">
 		<tr>
-			<td colspan="2"><h2>Product's Categories</h4></td>
-			<td colspan="2"><h2>Owl Megamenu</h4></td>
+			<td colspan="2"><h2>Product's Categories</h2></td>
+			<td colspan="3"><h2>Owl Megamenu</h2></td>
 		</tr>
 
 		{foreach from=$categories_tree item=category}
 			<tr>
 				<td colspan="2">[{$category.id_category}] {$category.name}</td>
-				<td colspan="2"> <input type="checkbox" class="parentcheck parent_{$category.id_category}" name ="use" id="use" value="{$category.id_category}" checked="checked"> </td>
-				<td> <input type="text" id="text" value="{$category.name}"> </td>
+				<td colspan="2"> <input type="checkbox" class="parentcheck parent_{$category.id_category}" name ="use[]" id="use[]" value="{$category.id_category}" checked="checked"> </td>
+				<td> <input type="text" id="text[{$category.id_category}]" name="text[{$category.id_category}]" value="{$category.name}" class="textof_{$category.id_category}"> </td>
 			</tr>
 
 			{foreach from=$category.childs item=child}
@@ -45,8 +45,8 @@
 					<td> --- </td>
 					<td>[{$child.id_category}] {$child.name}</td>
 					<td> --- </td>
-					<td> <input type="checkbox" class="childcheck childof_{$category.id_category}" parent="{$category.id_category}" name ="use" id="use" value="{$child.id_category}" checked="checked"> </td>
-					<td> <input type="text" id="text" value="{$child.name}"> </td>
+					<td> <input type="checkbox" class="childcheck childof_{$category.id_category}" parent="{$category.id_category}" name ="use[]" id="use[]" value="{$child.id_category}" checked="checked"> </td>
+					<td> <input type="text" id="text[{$child.id_category}]" name="text[{$child.id_category}]" value="{$child.name}" class="textof_{$child.id_category} textchildof_{$category.id_category}"> </td>
 				</tr>
 			{/foreach}	
 		{/foreach}		
@@ -62,15 +62,24 @@
 	    $(".parentcheck").click(function() {
 	        if(this.checked){
 	        	$(".childof_"+this.value).prop('checked', true);
+	        	$(".textof_"+this.value).show();
+	        	$(".textchildof_"+this.value).show();
 	        }else{
 	        	$(".childof_"+this.value).prop('checked', false);
+	        	$(".textof_"+this.value).hide();
+	        	$(".textchildof_"+this.value).hide();
 	        }
 	    }); 
+
 	    //checks the parent of the clicked child
 	    $(".childcheck").click(function() {
 	    	var parent = $(this).attr('parent');
 	        if(this.checked){
 	        	$(".parent_"+parent).prop('checked', true);
+	        	$(".textof_"+this.value).show();
+	        	$(".textof_"+parent).show();
+	        }else{
+	        	$(".textof_"+this.value).hide();
 	        }
 	    });                 
 	});
@@ -79,10 +88,15 @@
 
 	<div class="text-right" style="margin-top: 40px">
 
-		<button type="submit" class="btn btn-primary">Generate Menu</button>
-		&nbsp;&nbsp;&nbsp;
-		<button type="submit" class="btn btn-danger">Clear and then Generate Menu</button>
+		<button type="submit" id="mrg_save" name="mrg_save" class="btn btn-primary">Generate Menu</button>
 
 	</div>
 
 </div>
+</form>
+
+<style type="text/css">
+	.regenerator_table tr{
+		height: 37px !important;
+	}
+</style>

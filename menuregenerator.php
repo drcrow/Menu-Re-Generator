@@ -28,6 +28,12 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+include_once(_PS_MODULE_DIR_.'owlmegamenu/classes/OwlMegamenuClass.php');
+include_once(_PS_MODULE_DIR_.'owlmegamenu/classes/OwlMegamenuRowClass.php');
+include_once(_PS_MODULE_DIR_.'owlmegamenu/classes/OwlMegamenuColumnClass.php');
+include_once(_PS_MODULE_DIR_.'owlmegamenu/classes/OwlMegamenuItemClass.php');
+include_once(_PS_MODULE_DIR_.'owlmegamenu/sql/SampleDataMenu.php');
+
 class Menuregenerator extends Module
 {
     protected $config_form = false;
@@ -77,7 +83,7 @@ class Menuregenerator extends Module
         /**
          * If values have been submitted in the form, process.
          */
-        if (((bool)Tools::isSubmit('submitMenuregeneratorModule')) == true) {
+        if (((bool)Tools::isSubmit('mrg_save')) == true) {
             $this->postProcess();
         }
 
@@ -86,63 +92,23 @@ class Menuregenerator extends Module
 
         $output = $this->context->smarty->fetch($this->local_path.'views/templates/admin/configure.tpl');
 
-        return $output;//.$this->renderForm();
+        return $output;
     }
 
-    /**
-     * Create the form that will be displayed in the configuration of your module.
-     */
-    protected function renderForm()
-    {
-        $helper = new HelperForm();
 
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
-
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitMenuregeneratorModule';
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
-        );
-
-        return $helper->generateForm(array($this->getConfigForm()));
-    }
-
-    /**
-     * Create the structure of your form.
-     */
-    protected function getConfigForm()
-    {
-        
-    }
-
-    /**
-     * Set values for the inputs.
-     */
-    protected function getConfigFormValues()
-    {
-
-    }
 
     /**
      * Save form data.
      */
     protected function postProcess()
     {
-        $form_values = $this->getConfigFormValues();
 
-        foreach (array_keys($form_values) as $key) {
-            Configuration::updateValue($key, Tools::getValue($key));
-        }
+
+        //die('<pre>'.print_r($_POST, true).'</pre>');
+
+        $this->generateMenu($_POST['use'], $_POST['text'], $this->getCategoriesTree(), false);
+
+
     }
 
     /**
@@ -208,5 +174,98 @@ class Menuregenerator extends Module
     function getCategories($id_parent){
         $res = Db::getInstance()->executeS('SELECT `id_category` FROM `'._DB_PREFIX_.'category` WHERE id_parent = '.(int)$id_parent);
         return $res;
+    }
+
+    function generateMenu($items, $texts, $categories_tree){
+
+        //DELETE CURRENT MENU
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column_shop`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_lang`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_shop`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_lang`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row_shop`');
+        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_shop`');
+
+        //PARENTS
+        foreach($categories_tree AS $category){
+
+            if(in_array($category['id_category'], $items)){
+                //echo 'SI '.$category['id_category'].' - '.$texts[$category['id_category']].'<br>';
+
+                $new_id = $category['id_category'];
+                $new_tx = $texts[$new_id];
+                $menu_item_id = $this->owlMakeItem($new_tx, $new_id);
+                $row_item_id = $this->owlMakeRow($menu_item_id);
+                $col_item_id = $this->owlMakeCol($row_item_id);
+
+                //CHILDS
+                foreach($category['childs'] AS $child){
+                    $new_child_id = $child['id_category'];
+                    $new_child_tx = $texts[$new_child_id];
+                    $child_item_id = $this->owlMakeChild($new_child_tx, $new_child_id, $col_item_id);
+                }
+            } 
+
+        }
+
+    }
+
+
+    function owlMakeItem($cat_name, $cat_id){
+        $menu_item              = new OwlMegamenuClass();
+        $menu_item->position    = 0;
+        $menu_item->active      = 1;
+        $menu_item->type_link   = 1;
+        $menu_item->dropdown    = 0;
+        $menu_item->type_icon   = 0;
+        $menu_item->align_sub   = //'owl-sub-right';//'owl-sub-auto';
+        $menu_item->width_sub   = 'col-xl-3';
+        $menu_item->class       = '';
+        $menu_item->title[1]    = trim($cat_name);
+        $menu_item->link[1]     = '?id_category='.(int)$cat_id.'&controller=category';
+        $menu_item->add();
+
+        return $menu_item->id;
+    }
+
+    function owlMakeRow($menu_item_id){
+        $row_item                   = new OwlMegamenuRowClass();
+        $row_item->active           = 1;
+        $row_item->id_owlmegamenu   = $menu_item_id;
+        $row_item->class            = '';
+        $row_item->add();
+
+        return $row_item->id;
+    }
+
+    function owlMakeCol($row_item_id){
+        $col_item                   = new OwlMegamenuColumnClass();
+        $col_item->position         = 0;
+        $col_item->active           = 1;
+        $col_item->id_row           = $row_item_id;
+        $col_item->width            = 'col-lg-12';
+        $col_item->class            = '';
+        $col_item->add();
+
+        return $col_item->id;
+    }
+
+    function owlMakeChild($cat_name, $cat_id, $col_item_id){
+        $sub_menu_item                  = new OwlMegamenuItemClass();
+        $sub_menu_item->position        = 0;
+        $sub_menu_item->active          = 1;
+        $sub_menu_item->id_column       = $col_item_id;
+        $sub_menu_item->type_link       = 2;
+        $sub_menu_item->type_item       = 2;
+        $sub_menu_item->id_product      = 0;
+        $sub_menu_item->title[1]        = trim($cat_name);
+        $sub_menu_item->link[1]         = '?id_category='.(int)$cat_id.'&controller=category';
+        $sub_menu_item->add();
+
+        return $sub_menu_item->id;
     }
 }
