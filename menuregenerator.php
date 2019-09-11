@@ -42,9 +42,13 @@ class Menuregenerator extends Module
     {
         $this->name = 'menuregenerator';
         $this->tab = 'administration';
-        $this->version = '1.0.0';
+        $this->version = '1.2.0';
         $this->author = 'Agustín Fiori';
         $this->need_instance = 0;
+
+        $this->default_lang = 1;
+        $this->default_shop = 1;
+        $this->max_items_per_col = 9;
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -172,41 +176,61 @@ class Menuregenerator extends Module
     }
 
     function getCategories($id_parent){
-        $res = Db::getInstance()->executeS('SELECT `id_category` FROM `'._DB_PREFIX_.'category` WHERE id_parent = '.(int)$id_parent);
+        $sql = 'SELECT `id_category` FROM `'._DB_PREFIX_.'category` WHERE id_parent = '.(int)$id_parent;
+
+        /*
+        $sql = 'SELECT C.id_category, L.name
+                FROM ps_category C
+                LEFT JOIN ps_category_lang L
+                ON C.id_category = L.id_category
+                WHERE L.id_shop = '1'
+                AND L.name IS NOT NULL
+                AND C.id_parent = 1  
+                ORDER BY `L`.`name`  DESC';
+
+
+        die($sql);*/
+        $res = Db::getInstance()->executeS($sql);
         return $res;
     }
 
     function generateMenu($items, $texts, $categories_tree){
 
         //DELETE CURRENT MENU
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column_shop`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_lang`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_shop`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_lang`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row_shop`');
-        Db::getInstance()->executeS('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_shop`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_column_shop`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_lang`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_item_shop`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_lang`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_row_shop`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'owlmegamenu_shop`');
 
         //PARENTS
         foreach($categories_tree AS $category){
 
             if(in_array($category['id_category'], $items)){
-                //echo 'SI '.$category['id_category'].' - '.$texts[$category['id_category']].'<br>';
 
                 $new_id = $category['id_category'];
                 $new_tx = $texts[$new_id];
                 $menu_item_id = $this->owlMakeItem($new_tx, $new_id);
                 $row_item_id = $this->owlMakeRow($menu_item_id);
-                $col_item_id = $this->owlMakeCol($row_item_id);
+                
 
                 //CHILDS
+                $i = 0;
                 foreach($category['childs'] AS $child){
+                    //create cols
+                    if ($i % $this->max_items_per_col == 0){
+                        $col_item_id = $this->owlMakeCol($row_item_id);
+                    }
                     $new_child_id = $child['id_category'];
                     $new_child_tx = $texts[$new_child_id];
                     $child_item_id = $this->owlMakeChild($new_child_tx, $new_child_id, $col_item_id);
+                
+                    $i++;
                 }
             } 
 
@@ -225,7 +249,7 @@ class Menuregenerator extends Module
         $menu_item->type_link   = 1;
         $menu_item->dropdown    = 0;
         $menu_item->type_icon   = 0;
-        $menu_item->align_sub   = //'owl-sub-right';//'owl-sub-auto';
+        $menu_item->align_sub   = 'owl-sub-auto';//'owl-sub-right';//
         $menu_item->width_sub   = 'col-xl-3';
         $menu_item->class       = '';
         $menu_item->title[1]    = trim($cat_name);
@@ -250,7 +274,7 @@ class Menuregenerator extends Module
         $col_item->position         = 0;
         $col_item->active           = 1;
         $col_item->id_row           = $row_item_id;
-        $col_item->width            = 'col-lg-12';
+        $col_item->width            = 'col-lg-6';
         $col_item->class            = '';
         $col_item->add();
 
