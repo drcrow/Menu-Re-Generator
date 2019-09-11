@@ -212,6 +212,9 @@ class Menuregenerator extends Module
 
         }
 
+        //ORDER
+        $this->orderMenuAlphabetically();
+
     }
 
 
@@ -267,5 +270,47 @@ class Menuregenerator extends Module
         $sub_menu_item->add();
 
         return $sub_menu_item->id;
+    }
+
+    function orderMenuAlphabetically(){
+
+        //ORDER PARENTS
+        $sql = 'SELECT M.id_owlmegamenu, L.title
+                FROM '._DB_PREFIX_.'owlmegamenu M
+                LEFT JOIN '._DB_PREFIX_.'owlmegamenu_lang AS L
+                ON M.id_owlmegamenu = L.id_owlmegamenu
+                WHERE L.id_shop = '.(int)$this->default_shop.'
+                AND L.id_lang = '.(int)$this->default_lang.'
+                ORDER BY L.title';
+
+        $res = Db::getInstance()->executeS($sql);
+        $i = 0;
+        foreach ($res as $row) {
+            $sql = 'UPDATE '._DB_PREFIX_.'owlmegamenu SET position = '.(int)$i.' WHERE id_owlmegamenu = '.(int)$row['id_owlmegamenu'];
+            Db::getInstance()->execute($sql);
+            $sql = 'UPDATE '._DB_PREFIX_.'owlmegamenu_shop SET position = '.(int)$i.' WHERE id_owlmegamenu = '.(int)$row['id_owlmegamenu'].' AND id_shop = '.(int)$this->default_shop;
+            Db::getInstance()->execute($sql);
+            $i++;
+        }
+
+        //ORDER CHILDS
+        $sql = 'SELECT I.id_item, L.title
+                FROM '._DB_PREFIX_.'owlmegamenu_item I
+                LEFT JOIN '._DB_PREFIX_.'owlmegamenu_item_lang AS L
+                ON I.id_item = L.id_item
+                WHERE L.id_shop = '.(int)$this->default_shop.'
+                AND L.id_lang = '.(int)$this->default_lang.'
+                ORDER BY L.title';
+
+        $res = Db::getInstance()->executeS($sql);
+        $i = 0;
+        foreach ($res as $row) {
+            $sql = 'UPDATE '._DB_PREFIX_.'owlmegamenu_item SET position = '.(int)$i.' WHERE id_item = '.(int)$row['id_item'];
+            Db::getInstance()->execute($sql);
+            $sql = 'UPDATE '._DB_PREFIX_.'owlmegamenu_item_shop SET position = '.(int)$i.' WHERE id_item = '.(int)$row['id_item'].' AND id_shop = '.(int)$this->default_shop;
+            Db::getInstance()->execute($sql);
+            $i++;
+        }
+
     }
 }
